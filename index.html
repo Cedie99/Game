@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+</head>
+<body>
+    <style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1d1d1d;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#game-container {
+    width: 80%;
+    max-width: 1000px;
+    text-align: center;
+}
+
+#game-board {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.card {
+    width: 100px;
+    height: 100px;
+    background-color: #333;
+    border: 2px solid #444;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: transparent;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    text-align: center;
+    line-height: 100px;
+}
+
+.card.flipped {
+    background-color: #f39c12;
+    color: #1d1d1d;
+}
+
+#controls {
+    margin-bottom: 20px;
+}
+
+button {
+    background-color: #f39c12;
+    border: none;
+    border-radius: 5px;
+    color: #1d1d1d;
+    font-weight: bold;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin: auto;
+}
+
+button:hover {
+    background-color: #e67e22;
+}
+
+#feedback {
+    font-size: 18px;
+}
+
+#level, #moves {
+    font-size: 18px;
+}
+
+
+    </style>
+    <div id="game-container">
+        <header>
+            <h1>Memory Game</h1>
+        </header>
+        <div id="info">
+            <p id="level">Level: 1</p>
+            <p id="moves">Moves: 0</p>
+            <div id="safeTimer">
+                <h2>Safe Timer</h2>
+                <p id="safeTimerDisplay">01:00</p>
+                </div>
+            <p id="feedback"></p>
+        </div>
+        <div id="game-board"></div>
+        <button id="next-level" style="display: none;">Next Level</button>
+        <button id="start-level" onclick="startGame()">Start</button>
+    </div>
+    <script>
+let endTimer = document.getElementById('safeTimerDisplay');
+let start = document.getElementById('start-level');
+let gameBoard = document.getElementById('game-board');
+let timerInterval;
+let currentLevel = 1; // Initialize the level
+let isGameRunning = false; // Track whether the game is running
+
+function startTimer(duration, display) {
+    let timer = duration, minutes, seconds;
+    display.textContent = formatTime(timer);
+    display.style.color = "white"; // Set timer color to default (white)
+
+    // Hide the start button when the timer starts
+    start.style.display = 'none';
+    isGameRunning = true; // Set game running flag
+
+    timerInterval = setInterval(function () {
+        if (timer <= 0) {
+            clearInterval(timerInterval); // Stop the timer
+            
+            gameOver(display); // Show Game Over message
+            return;
+        }
+
+        minutes = Math.floor(timer / 60);
+        seconds = timer % 60;
+
+        display.textContent = formatTime(timer);
+        timer--; // Decrement timer
+    }, 1000);
+}
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes < 10 ? '0' + minutes : minutes}:${secs < 10 ? '0' + secs : secs}`;
+}
+
+function startGame() {
+    if (isGameRunning) return; // Prevent starting a new game if one is already running
+
+    // Ensure game state is reset before starting the timer
+    initializeGame(); 
+
+    const display = document.querySelector('#safeTimerDisplay');
+    const time = 60; // Get the duration based on the level
+    startTimer(time, display);
+}
+
+function clearGameBoard() {
+    gameBoard.innerHTML = ''; // Clear game board content
+    start.style.display = 'block'; // Show start button
+    start.textContent = "Restart";
+}
+
+function gameOver(display) {
+    display.textContent = "Game Over!";
+    display.style.color = "red"; // Change color to red
+    clearGameBoard();
+    isGameRunning = false; // Reset game running flag
+}
+
+
+function initializeGame() {
+    const cardValues = ['Python', 'C#', 'JavaScript', 'Visual Studio', 'HTML', 'Css', 'PHP', 'MySQL', 'C', 'Java', 'C++'];
+    let cardArray = [];
+    let flippedCards = [];
+    let matches = 0;
+    let moves = 0;
+
+    const levelElement = document.getElementById('level');
+    const movesElement = document.getElementById('moves');
+    const feedbackElement = document.getElementById('feedback');
+    const nextLevelButton = document.getElementById('next-level');
+    const gameBoard = document.getElementById('game-board');
+
+    cardArray = [];
+    matches = 0;
+    flippedCards = [];
+    gameBoard.innerHTML = '';
+    nextLevelButton.style.display = 'none';
+
+    const numCards = 4 * currentLevel; // Increase number of cards with each level
+    const cardsToCreate = cardValues.slice(0, numCards / 2).concat(cardValues.slice(0, numCards / 2));
+    cardsToCreate.sort(() => Math.random() - 0.5);
+
+    cardsToCreate.forEach(value => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.value = value;
+        card.addEventListener('click', () => flipCard(card));
+        gameBoard.appendChild(card);
+        cardArray.push(card);
+    });
+
+    levelElement.textContent = `Level: ${currentLevel}`;
+    movesElement.textContent = `Moves: ${moves}`;
+
+    function flipCard(card) {
+        if (!isGameRunning) return; // Prevent flipping cards if game is not running
+        if (card.classList.contains('flipped') || flippedCards.length === 2) return;
+
+        card.classList.add('flipped');
+        card.textContent = card.dataset.value; // Show the letter on the card
+        flippedCards.push(card);
+
+        if (flippedCards.length === 2) {
+            moves++;
+            movesElement.textContent = `Moves: ${moves}`;
+            setTimeout(() => checkForMatch(), 1000); // Delay checking to allow users to see the card values
+        }
+    }
+
+    function checkForMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.value === card2.dataset.value) {
+            matches++;
+            if (matches === cardArray.length / 2) {
+                nextLevelButton.style.display = 'block';
+                feedbackElement.textContent = 'All pairs matched! Proceed to the next level.';
+                clearInterval(timerInterval); // Stop the timer
+                const display = document.querySelector('#safeTimerDisplay');
+                currentLevel++; // Move to the next level
+                startTimer(60, display); // Start the next level with updated timer duration
+                startGame();
+            }
+        } else {
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+            card1.textContent = ''; // Hide the letter if not matched
+            card2.textContent = '';
+        }
+        flippedCards = [];
+    }
+
+    nextLevelButton.addEventListener('click', () => {
+        feedbackElement.textContent = '';
+        initializeGame();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the game when the page loads
+    initializeGame();
+
+    // Add event listener to the start button
+    start.addEventListener('click', startGame);
+});
+
+
+    </script>
+</body>
+</html>
